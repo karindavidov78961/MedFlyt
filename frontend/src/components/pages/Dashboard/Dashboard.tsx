@@ -22,20 +22,21 @@ export type Report = t.TypeOf<typeof resType>;
 
 type State =
     | {
-          type: "Initial";
-      }
+        type: "Initial";
+    }
     | {
-          type: "Resolved";
-          report: Report;
-          isRefreshing: boolean;
-      }
+        type: "Resolved";
+        report: Report;
+        isRefreshing: boolean;
+    }
     | {
-          type: "Rejected";
-          error: string;
-      };
+        type: "Rejected";
+        error: string;
+    };
 
 function useDashboard(params: { year: number }) {
     const [state, setState] = React.useState<State>({ type: "Initial" });
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
 
     const startLoading = () => {
         setState((prevState) => {
@@ -55,27 +56,33 @@ function useDashboard(params: { year: number }) {
         return axios
             .get<unknown>(endpoint(`reports/${params.year}`))
             .then((response) => {
-                if (!resType.is(response)) {
-                    console.error(PathReporter.report(resType.decode(response)).join(", "));
+                if (!resType.is(response.data)) {
+                    console.error(PathReporter.report(resType.decode(response.data)).join(", "));
                     throw new Error("Error");
                 }
 
-                setState({ type: "Resolved", report: response, isRefreshing: false });
+                setState({ type: "Resolved", report: response.data, isRefreshing: false });
             })
             .catch(() => {
                 setState({ type: "Rejected", error: "Error" });
             });
     }, [params.year]);
 
+    const refreshReport = async () => {
+        setIsRefreshing(true)
+        await fetchReport();
+        setIsRefreshing(false)
+    }
+
     React.useEffect(() => {
         fetchReport();
     }, [fetchReport]);
 
-    return { state, actions: { fetchReport } };
+    return { state, isRefreshing, actions: { fetchReport, refreshReport } };
 }
 
 const Dashboard = () => {
-    const { state, actions } = useDashboard({ year: 2021 });
+    const { state, isRefreshing, actions } = useDashboard({ year: 2021 });
 
     switch (state.type) {
         case "Initial":
@@ -83,7 +90,7 @@ const Dashboard = () => {
         case "Rejected":
             return <ErrorView message={state.error} onClickRetry={actions.fetchReport} />;
         case "Resolved":
-            return <TableView {...state} />;
+            return <TableView {...state} isRefreshing={isRefreshing} onClickRefresh={actions.refreshReport} />;
         default:
             assertNever(state);
             return <></>;

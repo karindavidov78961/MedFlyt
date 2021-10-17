@@ -15,7 +15,7 @@ export const getTimeModel = async () => {
         result = await dbUtil.sqlToDB(sql, data);
         return result;
     } catch (error) {
-        throw new Error(error.message);
+        throw error;
     }
 }
 
@@ -36,7 +36,7 @@ export const sampleTransactionModel = async () => {
         return transactionSuccess;
     } catch (error) {
         await dbUtil.rollback(client);
-        logger.error(`sampleTransactionModel error: ${error.message}`);
-        throw new Error(error.message);
+        logger.error(`sampleTransactionModel error: ${error}`);
+        throw error;
     }
 }
