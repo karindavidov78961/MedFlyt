@@ -11,6 +11,7 @@ interface Report {
 }
 
 export const getReport = async (req: Request, res: Response) => {
+    let year = parseInt(req.params.year);
 
     const sql = `
         SELECT
@@ -22,25 +23,24 @@ export const getReport = async (req: Request, res: Response) => {
         FROM caregiver
         JOIN visit ON visit.caregiver = caregiver.id
         JOIN patient ON patient.id = visit.patient
+        WHERE date_part('year', visit.date) = ${year}    
     `;
-    
-    let result : QueryResult;
+
+    let result: QueryResult;
     try {
         result = await dbUtil.sqlToDB(sql, []);
         const report: Report = {
-            year: parseInt(req.params.year),
+            year: year,
             caregivers: []
         };
 
-        for ( let row of result.rows) {
-            report.caregivers.push({
-                name: row.caregiver_name,
-                patients: [row.patient_name]
-            })
-        }
+        report.caregivers = Object.entries<string[]>(result.rows.reduce((a, { caregiver_name, patient_name }) =>
+            (a[caregiver_name] = (a[caregiver_name] || []).concat(patient_name), a), {}))
+            .map(([name, patients]) => ({ name, patients }));
+        
         res.status(200).json(report);
     } catch (error) {
-        throw new Error(error.message);
+        res.status(500).json({ error: error })
     }
 
 }

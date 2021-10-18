@@ -33,7 +33,7 @@ export const sqlToDB = async (sql:string, data:string[]) => {
         result = await pool.query(sql, data);
         return result;
     } catch (error) {
-        throw new Error(error.message);
+        throw error;
     }
 }
 
@@ -48,7 +48,7 @@ export const getTransaction = async () => {
         await client.query('BEGIN');
         return client;
     } catch (error) {
-        throw new Error(error.message);
+        throw error;
     }
 }
 
@@ -66,8 +66,8 @@ export const sqlExecSingleRow = async (client:Client, sql:string, data:string[][
         logger.debug(`sqlExecSingleRow(): ${result.command} | ${result.rowCount}`);
         return result
     } catch (error) {
-        logger.error(`sqlExecSingleRow() error: ${error.message} | sql: ${sql} | data: ${data}`);
-        throw new Error(error.message);
+        logger.error(`sqlExecSingleRow() error: ${error} | sql: ${sql} | data: ${data}`);
+        throw error;
     }
 }
 
@@ -88,7 +88,7 @@ export const sqlExecMultipleRows = async (client:Client, sql:string, data:string
                 await client.query(sql, item);
             } catch (error) {
                 logger.error(`sqlExecMultipleRows() error: ${error}`);
-                throw new Error(error.message);
+                throw error;
             }
         }
     } else {
@@ -106,7 +106,7 @@ export const rollback = async (client:Client) => {
             logger.info(`sql transaction rollback`);
             await client.query('ROLLBACK');
         } catch (error) {
-            throw new Error(error.message);
+            throw error
         } finally {
             client.release();
         }
@@ -123,7 +123,7 @@ export const commit = async (client:Client) => {
     try {
         await client.query('COMMIT');
     } catch (error) {
-        throw new Error(error.message);
+        throw error;
     } finally {
         client.release();
     }
